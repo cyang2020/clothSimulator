@@ -1,0 +1,442 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Mesh Editor</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2019</h1>
+<h1 align="middle">Project 4: Cloth Simulator</h1>
+<h2 align="middle">Casper Yang, 3031833416</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p> For this project, we created a cloth simulator that uses point mass and spring to mimice the behavior of cloth. In order to inmitate the physical features of cloth, I took account of springs constrains and gravity via numerical simulation. I also implemented the scenario where the cloth collides with other projects and itself. Later I added different shaders that run in parallel on GPU with GLSL language. Resulting in faster rendering.
+</p>
+</p>
+
+<h2 align="middle">Part I: Masses and springs</h2>
+<p> For Part I: First we need to creat a space of masses. Then depending if the orientation is Horizontal or Vertical to set y corrdinates to 1 or set z corrdinates offset. Then use a bool pin to keep track which point is being pinned. Then construct spings depending on their functions: STRUCTURAL, SHEARING, or BENDING.
+</p>
+<div align="middle">
+    <table style="width=100%">
+        <tr>
+            <td>
+                <img src="./images/PNO.png" align="middle" width="400px"/>
+                <figcaption align="middle">without any shearing constraints</figcaption>
+            </td>
+            <td>
+                <img src="images/P13.png" align="middle" width="400px"/>
+                <figcaption align="middle">Only shearing constraints</figcaption>
+            </td>
+        </tr>
+        <br>
+        <tr>
+            <td>
+                <img src="./images/P11.png" align="middle" width="400px"/>
+                <figcaption align="middle">All constraints</figcaption>
+            </td>
+            
+        </tr>
+        <br>
+    </table>
+    
+    <h2 align="middle">Part II: Simulation via numerical integration</h2>
+    <p> For Part II: Inorder to mimic the behavior of cloth we need to enable spring constants depending on the type of the spring through out movements(Because the bending constraint should be weaker). Then we need to compute each point mass's change in position via Verlet integration and update constrain positions.
+    </p>
+    
+    <h2 align="middle">Different ks</h2>
+    <div align="middle">
+        <table style="width=100%">
+            <tr>
+                <td>
+                    <img src="./images/k5000.png" align="middle" width="400px"/>
+                    <figcaption align="middle">ks = 5000 N/m</figcaption>
+                </td>
+                <td>
+                    <img src="images/k2000.png" align="middle" width="400px"/>
+                    <figcaption align="middle">ks = 2000 N/m</figcaption>
+                </td>
+            </tr>
+            <br>
+            <tr>
+                <td>
+                    <img src="./images/k500.png" align="middle" width="400px"/>
+                    <figcaption align="middle">ks = 500 N/m</figcaption>
+                </td>
+                <td>
+                    <img src="./images/k10.png" align="middle" width="400px"/>
+                    <figcaption align="middle">ks = 10 N/m</figcaption>
+                </td>
+            </tr>
+            <br>
+        </table>
+        <p> Ks is the spring constant. Changing which theoriticaly would change the "hardness" of the cloth. As we can see in the images where k = 5000, 2000, 500, 10; the bigger the ks value is the more hard or streched the cloth is. And the smaller the ks vlue is the more elastic the cloth is.
+        </p>
+        
+        <h2 align="middle">Different density</h2>
+        <div align="middle">
+            <table style="width=100%">
+                <tr>
+                    <td>
+                        <img src="./images/density1.png" align="middle" width="400px"/>
+                        <figcaption align="middle">density = 1 g/cm^2</figcaption>
+                    </td>
+                    <td>
+                        <img src="images/density10.png" align="middle" width="400px"/>
+                        <figcaption align="middle">density = 10 g/cm^2</figcaption>
+                    </td>
+                </tr>
+                <br>
+                <tr>
+                    <td>
+                        <img src="./images/density50.png" align="middle" width="400px"/>
+                        <figcaption align="middle">density = 50 g/cm^2</figcaption>
+                    </td>
+                    <td>
+                        <img src="./images/density100.png" align="middle" width="400px"/>
+                        <figcaption align="middle">density = 100 g/cm^2</figcaption>
+                    </td>
+                </tr>
+                <br>
+            </table>
+            <p> Density value indecate how "heavy" the point mass are. With the same ks value the smaller the density value is the more powerful the springs are thus more "held together". With greater density value the more elastic the cloth is, the more pulled down the cloth is by gravity.
+            </p>
+            <h2 align="middle">Different damping</h2>
+            <div align="middle">
+                <table style="width=100%">
+                    <tr>
+                        <td>
+                            <img src="./images/damp02.png" align="middle" width="400px"/>
+                            <figcaption align="middle">damp = 0.2%</figcaption>
+                        </td>
+                        <td>
+                            <img src="images/damp05.png" align="middle" width="400px"/>
+                            <figcaption align="middle">damp = 0.5%</figcaption>
+                        </td>
+                    </tr>
+                    <br>
+                    <tr>
+                        <td>
+                            <img src="./images/damp07.png" align="middle" width="400px"/>
+                            <figcaption align="middle">damp = 0.7%</figcaption>
+                        </td>
+                        <td>
+                            <img src="./images/damp1.png" align="middle" width="400px"/>
+                            <figcaption align="middle">damp = 1%</figcaption>
+                        </td>
+                    </tr>
+                    <br>
+                </table>
+                <p> One thing that stands out is that with greater damp value the slowier the motion is. And when the damping value is 0% the motion does not seem to stop. Damping value affects the energy that is lost in the process of motion. Thus with low damping value where there is no energy loss, thus resulting in the cloth swings back and force non-stop. With a higher damping value the more energy is lost in the process thus the motion takes longer due to the effects by air resistance.
+                </p>
+                <div align="middle">
+                    
+                        <tr>
+                            <td>
+                                <img src="./images/pinned4.png" align="middle" width="400px"/>
+                                <figcaption align="middle">pinned4.json with default settings</figcaption>
+                            </td>
+                        </tr>
+                        <br>
+                  
+                  <h2 align="middle">Part III: Handling collisions with spheres</h2>
+                  <p> For Part III: First I impemented what happens when cloth collides with a sphere. We will know if those have interaction when the pointmass' position is within r away from the origin of the sephere. Then, we calculate the tangent and correction. Finally we update point mass' positions.
+                Secondly, I inplemented what happens when the cloth collides with a plane. Simmilar to what we did with sphere collisions, we need to determine if the poinmass is on the other side of the plane.
+                  </p>
+                  <div align="middle">
+                      <table style="width=100%">
+                          <tr>
+                              <td>
+                                  <img src="./images/p3ks500.png" align="middle" width="400px"/>
+                                  <figcaption align="middle">ks = 500 N/m</figcaption>
+                              </td>
+                              <td>
+                                  <img src="images/p3ks5000.png" align="middle" width="400px"/>
+                                  <figcaption align="middle">ks = 5000 N/m</figcaption>
+                              </td>
+                          </tr>
+                          <br>
+                          <tr>
+                              <td>
+                                  <img src="./images/p3ks50000.png" align="middle" width="400px"/>
+                                  <figcaption align="middle">ks = 50000 N/m</figcaption>
+                              </td>
+                              
+                          </tr>
+                          <br>
+                      </table>
+                      <p> Like what we discovered earlier, with greater ks values comes greater hardness. Meaning the higher the ks value is the less soft the colth is. As we can see in the images: with ks of 500 the cloth is very soft and it drips all the way down, while when ks is 50000 the cloth is like it is made of rubber or other harder materials. PS: I used phong shades with a little transparency.
+                      </p>
+                      <div align="middle">
+                          <table style="width=100%">
+                              <tr>
+                                  <td>
+                                      <img src="./images/plane.png" align="middle" width="400px"/>
+                                      <figcaption align="middle">resting on a plane as if its on vecation</figcaption>
+                                  </td>
+                              <br>
+                          </table>
+    <h2 align="middle">Part IV: Handling self-collisions</h2>
+    <p> For Part IV: We devide all of the cloth into individual 3D boxes with different pointmass. For each 3Dbox we hash through the positions of pointmass. And build a hash table to determine which pointmass is close to other pointmass. And finally we can go through all pointmass with reference of the hash table to determine if pointmass contacts with others.
+       </p>
+       <div align="middle">
+           <table style="width=100%">
+               <tr>
+                   <td>
+              <img src="./images/p41.png" align="middle" width="400px"/>
+              <figcaption align="middle">Starts to go down</figcaption>
+          </td>
+          <td>
+              <img src="images/p42.png" align="middle" width="400px"/>
+              <figcaption align="middle">More being floded</figcaption>
+          </td>
+      </tr>
+      <br>
+      <tr>
+          <td>
+              <img src="./images/p43.png" align="middle" width="400px"/>
+              <figcaption align="middle">All the way down</figcaption>
+          </td>
+          <td>
+              <img src="images/p44.png" align="middle" width="400px"/>
+              <figcaption align="middle">Starts to tinkle</figcaption>
+          </td>
+      </tr>
+      <br>
+      <br>
+      <tr>
+          <td>
+              <img src="./images/p45.png" align="middle" width="400px"/>
+              <figcaption align="middle">The top layer goes all the way flat</figcaption>
+          </td>
+          <td>
+              <img src="images/p46.png" align="middle" width="400px"/>
+              <figcaption align="middle">Final resting phase</figcaption>
+          </td>
+      </tr>
+      <br>
+    </table>
+           <p> I used "Normal" shader to deliver this part since it shows better results.
+           </p>
+           <h2 align="middle">ks = 500 N/m</h2>
+           <div align="middle">
+               <table style="width=100%">
+                   <tr>
+                       <td>
+                           <img src="./images/P421.png" align="middle" width="400px"/>
+                           <figcaption align="middle">Its going down town</figcaption>
+                       </td>
+                       <td>
+                           <img src="images/P422.png" align="middle" width="400px"/>
+                           <figcaption align="middle">Goes all the way down and still moving</figcaption>
+                       </td>
+                   </tr>
+                   <br>
+                   <tr>
+                       <td>
+                           <img src="./images/P423.png" align="middle" width="400px"/>
+                           <figcaption align="middle">Fewer wrinkles </figcaption>
+                       </td>
+                       <td>
+                           <img src="./images/P424.png" align="middle" width="400px"/>
+                           <figcaption align="middle">Resting Phase</figcaption>
+                       </td>
+                   </tr>
+                   <br>
+               </table>
+               <p>With smaller ks value, we can clearly see that the cloth is more elastic. Thus resulting in more motions until reched to the resting phase. It seems like the cloth is tinkling for quite a bit.
+               </p>
+       <h2 align="middle">Density = 1 g/cm^2</h2>
+       <div align="middle">
+           <table style="width=100%">
+               <tr>
+                   <td>
+                       <img src="./images/P431.png" align="middle" width="400px"/>
+                       <figcaption align="middle">Its going down town</figcaption>
+                   </td>
+                   <td>
+                       <img src="images/P432.png" align="middle" width="400px"/>
+                       <figcaption align="middle">Goes all the way down and still moving</figcaption>
+                   </td>
+               </tr>
+               <br>
+               <tr>
+                   <td>
+                       <img src="./images/P433.png" align="middle" width="400px"/>
+                       <figcaption align="middle">Fewer wrinkles </figcaption>
+                   </td>
+                   <td>
+                       <img src="./images/P434.png" align="middle" width="400px"/>
+                       <figcaption align="middle">Resting Phase</figcaption>
+                   </td>
+               </tr>
+               <br>
+           </table>
+           <p>With smaller ks density, we can clearly see that the cloth is less elastic. Thus giving the cloth a rubber or leather feel. Resulting to fewer wrinkles.
+           </p>
+           
+<h2 align="middle">Part V: Shaders</h2>
+<p> For Part V: A shader is a smaller program runs on GPU which manipulate the scene before the image is drawn on to the screen. For this assignment we used vertex shaders which uses to modify the position of vertex, color, and texture coordinates. Adding more elements like color to the vertices that already exits(Mesh is made up by 3 vertex). We pass in gl_position to tell the shader where the vertex is rendered. Than we put the vec4 into the fragment shader to get the values of the pixels in that vertex.
+</p>
+<h2 align="middle">Blinn-Phong Shading</h2>
+<p> To better understand, Blinn-Phong Shading takes ambient shading(where we can get the geometric shapes since there is no relection), diffuse shading, and specular shading(Or High lights) and put them together to give a more realistic shader.
+</p>
+<div align="middle">
+   <table style="width=100%">
+       <tr>
+           <td>
+               <img src="./images/ambient.png" align="middle" width="400px"/>
+               <figcaption align="middle">with only ambient</figcaption>
+           </td>
+           <td>
+               <img src="images/diffuse.png" align="middle" width="400px"/>
+               <figcaption align="middle">with only diffuse</figcaption>
+           </td>
+       </tr>
+       <br>
+       <tr>
+           <td>
+               <img src="./images/specular.png" align="middle" width="400px"/>
+               <figcaption align="middle">with only specular</figcaption>
+           </td>
+           <td>
+               <img src="./images/final.png" align="middle" width="400px"/>
+               <figcaption align="middle">Blinn-Phong shading</figcaption>
+           </td>
+       </tr>
+       <br>
+   </table>
+               
+<h2 align="middle">Texture</h2>
+<div align="middle">
+    <table style="width=100%">
+        <tr>
+            <td>
+                <img src="./images/GOT1.png" align="middle" width="400px"/>
+                <figcaption align="middle">YOU KNOW NOTHING</figcaption>
+            </td>
+            <td>
+                <img src="images/GOT2.png" align="middle" width="400px"/>
+                <figcaption align="middle">JON SNOW</figcaption>
+            </td>
+        </tr>
+        
+    </table>
+           <h2 align="middle">GAME OF THRONES!!!!! JON SNOW LETS GO!!!!!</h2>
+           
+           <h2 align="middle">BUMP DISPLACEMENT</h2>
+           <div align="middle">
+               <table style="width=100%">
+                   <tr>
+                       <td>
+                           <img src="./images/bump3.png" align="middle" width="400px"/>
+                           <figcaption align="middle">bump</figcaption>
+                       </td>
+                       <td>
+                           <img src="images/dump31.png" align="middle" width="400px"/>
+                           <figcaption align="middle">bump</figcaption>
+                       </td>
+                   </tr>
+                   <tr>
+                       <td>
+                           <img src="./images/disp3.png" align="middle" width="400px"/>
+                           <figcaption align="middle">displace</figcaption>
+                       </td>
+                       <td>
+                           <img src="images/disp31.png" align="middle" width="400px"/>
+                           <figcaption align="middle">displace</figcaption>
+                       </td>
+                   </tr>
+                   
+               </table>
+               <div align="middle">
+                   <table style="width=100%">
+                       <tr>
+                           <td>
+                               <img src="./images/bump16.png" align="middle" width="400px"/>
+                               <figcaption align="middle">bump with -o 16 -a 16</figcaption>
+                           </td>
+                           <td>
+                               <img src="images/bump161.png" align="middle" width="400px"/>
+                               <figcaption align="middle">bump with -o 16 -a 16</figcaption>
+                           </td>
+                       </tr>
+                       <tr>
+                           <td>
+                               <img src="./images/disp16.png" align="middle" width="400px"/>
+                               <figcaption align="middle">displace with -o 16 -a 16</figcaption>
+                           </td>
+                           <td>
+                               <img src="images/disp161.png" align="middle" width="400px"/>
+                               <figcaption align="middle">displace with -o 16 -a 16</figcaption>
+                           </td>
+                       </tr>
+                   </table>
+                   <div align="middle">
+                       <table style="width=100%">
+                           <tr>
+                               <td>
+                                   <img src="./images/bump128.png" align="middle" width="400px"/>
+                                   <figcaption align="middle">bump with -o 128 -a 128</figcaption>
+                               </td>
+                               <td>
+                                   <img src="images/bump1281.png" align="middle" width="400px"/>
+                                   <figcaption align="middle">bump with -o 128 -a 128</figcaption>
+                               </td>
+                           </tr>
+                           <tr>
+                               <td>
+                                   <img src="./images/disp128.png" align="middle" width="400px"/>
+                                   <figcaption align="middle">displace with -o 128 -a 128</figcaption>
+                               </td>
+                               <td>
+                                   <img src="images/disp1281.png" align="middle" width="400px"/>
+                                   <figcaption align="middle">displace with -o 128 -a 128</figcaption>
+                               </td>
+                           </tr>
+                       </table>
+                       
+                       <p> For bump shader the main idea is to modify the normal vectors of a mesh thus resulting a texture feel. As we but tags -o16 -a16 and -o128 -a128 on to the sphere inorder to change the quality of the sphere(more pointy). As we can see the result does not differ that much.
+                       </p>
+                       <p> For displacement shader the main idea is to also modify the positions as well as the normal vectors like what we did in bump shader. As we but tags -o16 -a16 and -o128 -a128 on to the sphere inorder to change the quality of the sphere(more pointy). As we can see the sphere changes dramticly. The one with 16 tag maintained the pointy look while the one with 128 tag is more similar to the original.
+                       </p>
+                       
+                       <h2 align="middle">Mirror Shader</h2>
+                       <div align="middle">
+                           <table style="width=100%">
+                               <tr>
+                                   <td>
+                                       <img src="./images/mirror1.png" align="middle" width="400px"/>
+                                       <figcaption align="middle">mirror</figcaption>
+                                   </td>
+                                   <td>
+                                       <img src="images/mirror2.png" align="middle" width="400px"/>
+                                       <figcaption align="middle">mirror</figcaption>
+                                   </td>
+                               </tr>
+                               
+                           </table>
+</body>
+</html>
